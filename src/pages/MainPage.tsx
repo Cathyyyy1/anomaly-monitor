@@ -1,4 +1,4 @@
-import React, { useEffect, useState, ChangeEvent, useCallback, useRef } from 'react';
+import React, { useEffect, useState, ChangeEvent, useRef } from 'react';
 import {
   Container,
   Paper,
@@ -12,7 +12,6 @@ import {
   TableBody,
   Box,
   Alert,
-  IconButton,
   Chip,
   Collapse
 } from '@mui/material';
@@ -63,7 +62,6 @@ const MainPage: React.FC = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState<boolean>(false);
   const [lastVideoLoadTime, setLastVideoLoadTime] = useState<number>(0);
-  const [currentFrameNumber, setCurrentFrameNumber] = useState<number>(0);
 
   const [frameTimestamps, setFrameTimestamps] = useState<number[]>([]);
   const [detectionCount, setDetectionCount] = useState<number>(0);

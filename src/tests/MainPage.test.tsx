@@ -164,6 +164,7 @@ describe('MainPage', () => {
     expect(screen.getByText(/Failed to fetch alerts/)).toBeInTheDocument();
   });
 
+
   test('toggles debug mode', async () => {
     // Use await act for the initial render that triggers fetch
     await act(async () => {
@@ -210,70 +211,100 @@ describe('MainPage', () => {
     expect(screen.getByTestId('video-processor')).toHaveAttribute('data-video-src', 'https://example.com/sample-video.mp4');
   });
 
-  test('handles detection results and creates alerts', async () => {
-    // Mock successful alerts fetch
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => [],
-      status: 200,
-      statusText: 'OK'
-    });
-    
-    // Use await act for the initial render that triggers fetch
-    await act(async () => {
-      render(<MainPage />);
-    });
-    
-    // Load a test video - wrap in act since it updates state
-    await act(async () => {
-      fireEvent.click(screen.getByText('Load Test Video'));
-    });
-    
-    // Reset fetch mock to start tracking new calls
-    mockFetch.mockClear();
-    
-    // Mock for creating alert
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ id: 1, success: true }),
-      status: 200,
-      statusText: 'OK'
-    });
-    
-    // Mock for getting updated alerts
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => [{ id: 1, timestamp: '2023-01-01T12:00:00Z', type: 'ML Detection', message: 'Detected person', severity: 'high', status: 'new' }],
-      status: 200,
-      statusText: 'OK'
-    });
-    
-    // Trigger detection - wrap in act since it triggers fetch and state updates
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('trigger-detection-button'));
-      
-      // Manually wait to ensure async operations complete
-      await new Promise(resolve => setTimeout(resolve, 100));
-    });
-    
-    // Get the last two fetch calls
-    const fetchCalls = mockFetch.mock.calls;
-    
-    // Check that one of the fetch calls was a POST to create an alert
-    const createAlertCall = fetchCalls.find(call => 
-      call[0] === 'http://18.117.146.197:4000/api/alerts' && 
-      call[1]?.method === 'POST'
-    );
-    
-    // This test might be flaky if the component has error handling issues
-    // If consistently failing, you might need to adapt the test to your component's behavior
-    if (createAlertCall) {
-      expect(createAlertCall[1].body).toContain('ML Detection');
-    } else {
-      // Alternative check - at least verify a fetch was made
-      expect(mockFetch).toHaveBeenCalled();
-    }
+  // Replace the 'handles detection results and creates alerts' test with this fixed version
+
+test('handles detection results and creates alerts', async () => {
+  // Mock console.error to prevent test output noise
+  const originalConsoleError = console.error;
+  console.error = jest.fn();
+
+  // Mock successful alerts fetch
+  mockFetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => [],
+    status: 200,
+    statusText: 'OK'
   });
+  
+  // Use await act for the initial render that triggers fetch
+  await act(async () => {
+    render(<MainPage />);
+  });
+  
+  // Load a test video
+  await act(async () => {
+    fireEvent.click(screen.getByText('Load Test Video'));
+  });
+  
+  // Reset fetch mock to track new calls
+  mockFetch.mockClear();
+  
+  // Important: This is where the error happens - need to mock the fetch for existing alerts
+  // When the alert is created, your component fetches existing alerts first to check for duplicates
+  mockFetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => [], // Return empty array for existing alerts check
+    status: 200,
+    statusText: 'OK'
+  });
+  
+  // Mock response for alert creation
+  mockFetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => ({ id: 1, success: true }),
+    status: 200,
+    statusText: 'OK'
+  });
+  
+  // Mock for getting updated alerts after creation
+  mockFetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => [
+      { 
+        id: 1, 
+        timestamp: '2023-01-01T12:00:00Z', 
+        type: 'ML Detection', 
+        message: 'Detected person', 
+        severity: 'high', 
+        status: 'new',
+        metadata: { detectionSequence: 1 }
+      }
+    ],
+    status: 200,
+    statusText: 'OK'
+  });
+  
+  // Trigger detection
+  await act(async () => {
+    fireEvent.click(screen.getByTestId('trigger-detection-button'));
+    
+    // Manually wait to ensure async operations complete
+    await new Promise(resolve => setTimeout(resolve, 100));
+  });
+  
+  // Get the fetch calls made after reset
+  const fetchCalls = mockFetch.mock.calls;
+  
+  // Should have made at least 3 fetch calls (get alerts, create alert, refresh alerts)
+  expect(fetchCalls.length).toBeGreaterThanOrEqual(3);
+  
+  // Check that one of the fetch calls was a POST to create an alert
+  const createAlertCall = fetchCalls.find(call => 
+    call[0] === 'http://18.117.146.197:4000/api/alerts' && 
+    call[1]?.method === 'POST'
+  );
+  
+  // Verify alert creation API was called
+  expect(createAlertCall).toBeTruthy();
+  
+  // If you want to be more specific, you can check the body contains expected data
+  if (createAlertCall) {
+    expect(createAlertCall[1].body).toContain('ML Detection');
+  }
+  
+  // Restore console.error
+  console.error = originalConsoleError;
+});
 
   test('opens and closes alert detail modal', async () => {
     const mockAlerts = [

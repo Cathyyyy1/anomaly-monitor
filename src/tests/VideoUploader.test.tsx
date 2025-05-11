@@ -97,7 +97,7 @@ describe('VideoUploader', () => {
   test('calls onVideoSelect when Use This Video button is clicked', async () => {
     // Ensure URL.createObjectURL returns our mock URL
     (global.URL.createObjectURL as jest.Mock).mockReturnValue('blob:mock-url');
-    
+
     render(<VideoUploader onVideoSelect={mockOnVideoSelect} />);
     
     // First, select a file
@@ -149,7 +149,8 @@ describe('VideoUploader', () => {
     // Mock URL.createObjectURL to throw an error
     (global.URL.createObjectURL as jest.Mock).mockImplementationOnce(() => {
         throw new Error('Failed to create object URL');
-      });
+    });
+
     
     render(<VideoUploader onVideoSelect={mockOnVideoSelect} />);
     
