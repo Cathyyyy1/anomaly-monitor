@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dialog, DialogTitle, DialogContent, Typography, Box } from '@mui/material';
 
-interface Alert {
+interface AlertData {
   id: number;
   timestamp: string;
   type: string;
@@ -11,7 +11,7 @@ interface Alert {
 interface Props {
   open: boolean;
   onClose: () => void;
-  alert: Alert | null;
+  alert: AlertData | null;
 }
 
 const AlertDetailModal: React.FC<Props> = ({ open, onClose, alert }) => {

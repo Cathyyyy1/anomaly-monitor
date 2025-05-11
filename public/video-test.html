@@ -1,0 +1,73 @@
+<!-- public/video-test.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Test Page</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    .video-container { border: 1px solid #ccc; padding: 10px; margin: 20px 0; }
+    .info { background: #f0f0f0; padding: 10px; border-radius: 4px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Video Test Page</h1>
+    
+    <div class="video-container">
+      <h2>Test 1: External Video</h2>
+      <video 
+        id="external-video"
+        src="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+        controls
+        width="100%"
+        autoplay
+        muted
+      ></video>
+      <div class="info" id="external-info">Loading...</div>
+    </div>
+    
+    <div class="video-container">
+      <h2>Test 2: Local Video</h2>
+      <video 
+        id="local-video"
+        src="/samples/stanford-drone/bookstore_optimized_video0.mp4"
+        controls
+        width="100%"
+        autoplay
+        muted
+      ></video>
+      <div class="info" id="local-info">Loading...</div>
+    </div>
+  </div>
+
+  <script>
+    function updateVideoInfo(videoId, infoId) {
+      const video = document.getElementById(videoId);
+      const info = document.getElementById(infoId);
+      
+      video.onloadeddata = () => {
+        info.innerHTML = `
+          <strong>Status:</strong> Loaded successfully<br>
+          <strong>Duration:</strong> ${video.duration.toFixed(2)}s<br>
+          <strong>Dimensions:</strong> ${video.videoWidth}x${video.videoHeight}<br>
+          <strong>Ready State:</strong> ${video.readyState}
+        `;
+      };
+      
+      video.onerror = () => {
+        info.innerHTML = `
+          <strong>Status:</strong> Error loading video<br>
+          <strong>Error Code:</strong> ${video.error ? video.error.code : 'Unknown'}<br>
+          <strong>Network State:</strong> ${video.networkState}
+        `;
+      };
+    }
+    
+    updateVideoInfo('external-video', 'external-info');
+    updateVideoInfo('local-video', 'local-info');
+  </script>
+</body>
+</html>
