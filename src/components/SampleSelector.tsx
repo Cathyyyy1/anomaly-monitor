@@ -5,21 +5,21 @@ import { Box, Typography, FormControl, InputLabel, MenuItem, Button, Select, Sel
 // Stanford Drone Dataset sample videos
 const samples = [
   // Fallback to a guaranteed working video
-  { 
-    id: 'test_video', 
-    name: 'Test Video (Guaranteed)', 
-    url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' 
-  },
+//   { 
+//     id: 'test_video', 
+//     name: 'Test Video (Guaranteed)', 
+//     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' 
+//   },
   // Local video with proper path (should start with /)
-  { 
-    id: 'bookstore_0', 
-    name: 'Bookstore Video 0', 
-    url: '/samples/stanford-drone/bookstore_optimized_video0.mp4' 
-  },
+//   { 
+//     id: 'bookstore_0', 
+//     name: 'Bookstore Video 0', 
+//     url: '/samples/stanford-drone/bookstore_optimized_video0.mp4' 
+//   },
   // Add additional sample with proper path
   { 
     id: 'bookstore_alt', 
-    name: 'Bookstore Video (Alternative)', 
+    name: 'Bookstore Video 0', 
     url: '/samples/stanford-drone/bookstore_video0.mp4' 
   },
 ];
