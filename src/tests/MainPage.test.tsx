@@ -3,7 +3,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import MainPage from '../pages/MainPage';
-import { Detection, AnomalyResult } from '../services/ObjectDetectionService';
+import { Detection, AnomalyResult } from '../services/YOLOObjectDetectionService';
 
 // Mock the child components
 jest.mock('../components/AlertDetailModal', () => ({

@@ -1,12 +1,12 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Box, Typography, CircularProgress, Paper, Chip, Stack, Button, Alert, Slider } from '@mui/material';
-import { objectDetectionService, Detection, AnomalyResult } from '../services/ObjectDetectionService';
+import { detectionService, Detection, AnomalyResult } from '../services/DetectionServiceAdapter';
 
 interface VideoProcessorProps {
     videoSrc: string;
     onDetection: (detections: Detection[], anomalyResult: AnomalyResult) => void;
-    onVideoTimeUpdate?: (event: React.SyntheticEvent<HTMLVideoElement>) => void; // New prop for time updates
-  }
+    onVideoTimeUpdate?: (event: React.SyntheticEvent<HTMLVideoElement>) => void;
+}
 
 const VideoProcessor: React.FC<VideoProcessorProps> = ({ 
   videoSrc, 
@@ -28,7 +28,8 @@ const VideoProcessor: React.FC<VideoProcessorProps> = ({
   const [videoLoadAttempts, setVideoLoadAttempts] = useState<number>(0);
   const [frameSkip, setFrameSkip] = useState<number>(2); // Skip every 2 frames
   const [frameCount, setFrameCount] = useState<number>(0);
-  const [anomalyThreshold, setAnomalyThreshold] = useState<number>(0.8); // Higher threshold to reduce false positives
+  const [anomalyThreshold, setAnomalyThreshold] = useState<number>(0.8);
+  const [modelInfo, setModelInfo] = useState<string>('YOLO Object Detection');
 
   // Memoize detection results handler with frame skipping and smoothing
   const handleDetectionResults = useCallback((
@@ -80,17 +81,20 @@ const VideoProcessor: React.FC<VideoProcessorProps> = ({
           // Proceed with ML processing with frame skip
           try {
             // Configure frame skip
-            if (objectDetectionService.setFrameSkip) {
-              objectDetectionService.setFrameSkip(frameSkip);
-            }
+            detectionService.setFrameSkip(frameSkip);
             
-            objectDetectionService.detectObjectsOnVideo(
+            detectionService.detectObjectsOnVideo(
               video, 
-              handleDetectionResults
+              handleDetectionResults,
+              (error) => {
+                console.error("Error in detectObjectsOnVideo:", error);
+                setError(`Error during detection: ${error.message || String(error)}`);
+                setProcessing(false);
+              }
             );
           } catch (err) {
-            console.error("Error in detectObjectsOnVideo:", err);
-            setError(`Error starting detection: ${err}`);
+            console.error("Error starting detection:", err);
+            setError(`Error starting detection: ${err instanceof Error ? err.message : String(err)}`);
             setProcessing(false);
           }
         })
@@ -102,21 +106,24 @@ const VideoProcessor: React.FC<VideoProcessorProps> = ({
     }
 
     setProcessing(true);
-    console.log("Starting ML processing...");
+    console.log("Starting ML processing with YOLO...");
     
     // Configure frame skip
-    if (objectDetectionService.setFrameSkip) {
-      objectDetectionService.setFrameSkip(frameSkip);
-    }
+    detectionService.setFrameSkip(frameSkip);
     
     // Proceed with ML processing
     try {
-      objectDetectionService.detectObjectsOnVideo(
+      detectionService.detectObjectsOnVideo(
         video, 
-        handleDetectionResults
+        handleDetectionResults,
+        (error) => {
+          console.error("Error in detectObjectsOnVideo:", error);
+          setError(`Error during detection: ${error.message || String(error)}`);
+          setProcessing(false);
+        }
       );
     } catch (err: any) {
-      console.error("Error in detectObjectsOnVideo:", err);
+      console.error("Error starting detection:", err);
       setError(`Error starting detection: ${err.message || err}`);
       setProcessing(false);
     }
@@ -163,6 +170,8 @@ const VideoProcessor: React.FC<VideoProcessorProps> = ({
     
     // Draw detection boxes if we have them
     if (detections && detections.length > 0) {
+      console.log('Drawing detections:', detections);
+      
       detections.forEach(detection => {
         const [x, y, width, height] = detection.bbox;
         const isAnomaly = anomalyResult?.anomalies.some(
@@ -171,17 +180,19 @@ const VideoProcessor: React.FC<VideoProcessorProps> = ({
           a.bbox[1] === detection.bbox[1]
         );
         
-        // Draw box
+        // Draw box with thicker lines for better visibility in aerial footage
         ctx.strokeStyle = isAnomaly ? '#FF0000' : '#00FF00';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 4; // Thicker lines
         ctx.strokeRect(x, y, width, height);
         
-        // Draw label background
+        // Draw more visible label background
         const label = `${detection.class} ${Math.round(detection.score * 100)}%`;
+        ctx.font = 'bold 16px Arial'; // Bold font
         const textMetrics = ctx.measureText(label);
-        const textHeight = 16; // Approximate height for 16px font
+        const textHeight = 20; // Increase height for better visibility
         
-        ctx.fillStyle = isAnomaly ? 'rgba(255, 0, 0, 0.7)' : 'rgba(0, 255, 0, 0.7)';
+        // More opaque background for better visibility
+        ctx.fillStyle = isAnomaly ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 255, 0, 0.9)';
         ctx.fillRect(
           x, 
           y > textHeight ? y - textHeight : y,
@@ -189,15 +200,19 @@ const VideoProcessor: React.FC<VideoProcessorProps> = ({
           textHeight
         );
         
-        // Draw label
+        // Draw label in contrasting color
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = '16px Arial';
         ctx.fillText(
           label,
           x + 3,
           y > textHeight ? y - 3 : y + textHeight - 3
         );
       });
+    } else {
+      // If no detections, add a small indicator that the system is running
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.font = '14px Arial';
+      ctx.fillText('Analyzing...', 10, 20);
     }
     
     // Draw anomaly indicator if anomalies detected (less obtrusive)
@@ -254,18 +269,20 @@ const VideoProcessor: React.FC<VideoProcessorProps> = ({
     };
   }, [processing, detections, anomalyResult, drawDetectionsSmooth]);
 
-  // Load the model when component mounts
+  // Load the YOLO model when component mounts
   useEffect(() => {
     const loadModel = async () => {
       try {
         setModelLoading(true);
         console.log('Loading object detection model...');
-        await objectDetectionService.loadModel();
-        console.log('Model loaded successfully');
+        await detectionService.loadModel();
+        console.log('Model loading completed');
+        setModelInfo('Object Detection Model loaded successfully');
         setModelLoading(false);
       } catch (err) {
         console.error('Failed to load object detection model:', err);
-        setError('Failed to load object detection model. Try refreshing the page.');
+        setError(`Failed to load object detection model: ${err instanceof Error ? err.message : String(err)}`);
+        setModelInfo('Error: Object detection model failed to load');
         setModelLoading(false);
       }
     };
@@ -445,8 +462,8 @@ const VideoProcessor: React.FC<VideoProcessorProps> = ({
     const value = newValue as number;
     setFrameSkip(value);
     // Update in the service if it's running
-    if (processing && objectDetectionService.setFrameSkip) {
-      objectDetectionService.setFrameSkip(value);
+    if (processing) {
+      detectionService.setFrameSkip(value);
     }
   };
 
@@ -461,7 +478,7 @@ const VideoProcessor: React.FC<VideoProcessorProps> = ({
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
           <CircularProgress />
           <Typography sx={{ ml: 2 }}>
-            {modelLoading ? 'Loading ML model...' : 'Loading video...'}
+            {modelLoading ? 'Loading YOLO model...' : 'Loading video...'}
           </Typography>
         </Box>
       )}
@@ -483,11 +500,13 @@ const VideoProcessor: React.FC<VideoProcessorProps> = ({
       )}
       
       <Box sx={{ position: 'relative', border: '2px dashed #ccc', padding: 2 }}>
-        <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
-          Debug Info - Video Source URL: {videoSrc || 'None'}
-        </Typography>
+        <Box sx={{ mb: 2 }}>
+          <Alert severity={error ? "warning" : "info"}>
+            {error ? error : modelInfo}
+          </Alert>
+        </Box>
         
-        {/* Video element - visible for debugging */}
+        {/* Video element - hidden in production */}
         <video 
           ref={videoRef} 
           playsInline
@@ -499,9 +518,7 @@ const VideoProcessor: React.FC<VideoProcessorProps> = ({
           width="100%"
           onTimeUpdate={onVideoTimeUpdate}
           style={{ 
-            border: '1px solid blue',
-            marginBottom: '10px',
-            display: 'block'  // Make it visible
+            display: 'none'  // Hidden in production
           }}
         />
         
@@ -512,7 +529,7 @@ const VideoProcessor: React.FC<VideoProcessorProps> = ({
               color="primary"
               onClick={handleStartProcessing}
             >
-              Start Video Analysis
+              Start Object Detection
             </Button>
           </Box>
         )}
@@ -539,43 +556,7 @@ const VideoProcessor: React.FC<VideoProcessorProps> = ({
           </Box>
         )}
         
-        {/* Detection settings */}
-        {processing && (
-          <Paper sx={{ mt: 2, p: 2 }}>
-            <Typography variant="h6" gutterBottom>Detection Settings</Typography>
-            
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Frame Skip: {frameSkip} (higher = less flashing, lower performance impact)
-              </Typography>
-              <Slider
-                value={frameSkip}
-                onChange={handleFrameSkipChange}
-                step={1}
-                marks
-                min={0}
-                max={5}
-                valueLabelDisplay="auto"
-                disabled={!processing}
-              />
-            </Box>
-            
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Anomaly Threshold: {anomalyThreshold.toFixed(2)} (higher = fewer alerts)
-              </Typography>
-              <Slider
-                value={anomalyThreshold}
-                onChange={handleThresholdChange}
-                step={0.05}
-                marks
-                min={0.5}
-                max={0.95}
-                valueLabelDisplay="auto"
-              />
-            </Box>
-          </Paper>
-        )}
+        {/* Detection settings removed as requested */}
         
         {processing && anomalyResult && (
           <Paper sx={{ mt: 2, p: 2 }}>

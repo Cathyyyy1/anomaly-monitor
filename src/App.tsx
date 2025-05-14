@@ -1,23 +1,39 @@
+// src/App.tsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import MainPage from './pages/MainPage';
-import VideoTestPage from './components/VideoTest';
+import { Box, AppBar, Toolbar, Typography, Container } from '@mui/material';
 
-function App() {
+const App: React.FC = () => {
   return (
     <Router>
-      {/* Simple navigation for debugging */}
-      <div style={{ padding: '10px', backgroundColor: '#f0f0f0', marginBottom: '10px' }}>
-        <Link to="/" style={{ marginRight: '20px' }}>Main App</Link>
-        <Link to="/video-test">Video Test Page</Link>
-      </div>
-      
-      <Routes>
-        <Route path="/" element={<MainPage />} />
-        <Route path="/video-test" element={<VideoTestPage />} />
-      </Routes>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <AppBar position="static" color="default" elevation={0} sx={{ borderBottom: '1px solid #e0e0e0' }}>
+          <Container>
+            <Toolbar sx={{ flexWrap: 'wrap' }}>
+              <Typography variant="h6" color="inherit" noWrap sx={{ flexGrow: 1 }}>
+                Anomaly Detection System
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                {/* Only keeping the Main App navigation item */}
+                <a href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+                  Main App
+                </a>
+                {/* Video Test Page link removed */}
+              </Box>
+            </Toolbar>
+          </Container>
+        </AppBar>
+        <Box sx={{ flexGrow: 1 }}>
+          <Routes>
+            <Route path="/" element={<MainPage />} />
+            {/* Video Test Page route removed */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Box>
+      </Box>
     </Router>
   );
-}
+};
 
 export default App;
