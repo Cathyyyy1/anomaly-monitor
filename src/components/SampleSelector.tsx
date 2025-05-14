@@ -41,50 +41,30 @@ const STANFORD_DRONE_SAMPLES = [
   {
     id: 'hyang-0',
     name: 'Huang Scene 0',
-    thumbnail: 'https://stanford.edu/~alahi/StanfordDroneDataset/hyang/video0/reference.jpg',
-    url: 'https://storage.googleapis.com/sdd-videos/hyang_video0.mp4'
+    thumbnail: '/samples/stanford-drone/hyang_0_reference.jpg',
+    url: '/samples/stanford-drone/hyang_0_video.mp4'
   },
   {
     id: 'nexus-0',
     name: 'Nexus Scene 0',
-    thumbnail: 'https://stanford.edu/~alahi/StanfordDroneDataset/nexus/video0/reference.jpg',
-    url: 'https://storage.googleapis.com/sdd-videos/nexus_video0.mp4'
+    thumbnail: '/samples/stanford-drone/nexus_0_reference.jpg',
+    url: '/samples/stanford-drone/nexus_0_video.mp4'
   },
   {
     id: 'quad-0',
     name: 'Quad Scene 0',
-    thumbnail: 'https://stanford.edu/~alahi/StanfordDroneDataset/quad/video0/reference.jpg',
-    url: 'https://storage.googleapis.com/sdd-videos/quad_video0.mp4'
+    thumbnail: '/samples/stanford-drone/quad_0_reference.jpg',
+    url: '/samples/stanford-drone/quad_0_video.mp4'
   },
   {
     id: 'little-0',
     name: 'Little Scene 0',
-    thumbnail: 'https://stanford.edu/~alahi/StanfordDroneDataset/little/video0/reference.jpg',
-    url: 'https://storage.googleapis.com/sdd-videos/little_video0.mp4'
+    thumbnail: '/samples/stanford-drone/little_0_reference.jpg',
+    url: '/samples/stanford-drone/little_0_video.mp4'
   }
 ];
 
-// Fallback videos if Stanford Drone Dataset isn't available
-const FALLBACK_VIDEOS = [
-  {
-    id: 'crossroad-1',
-    name: 'Crossroad Traffic',
-    thumbnail: '/api/placeholder/320/180',
-    url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
-  },
-  {
-    id: 'pedestrians-1',
-    name: 'Pedestrian Walkway',
-    thumbnail: '/api/placeholder/320/180',
-    url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4'
-  },
-  {
-    id: 'street-1',
-    name: 'Street Scene',
-    thumbnail: '/api/placeholder/320/180',
-    url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
-  }
-];
+
 
 interface SampleSelectorProps {
   onSelectSample: (sampleUrl: string) => void;
@@ -115,20 +95,6 @@ const SampleSelector: React.FC<SampleSelectorProps> = ({ onSelectSample }) => {
       </Box>
       
       <Collapse in={expanded}>
-        <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-          <Typography variant="body2" sx={{ mb: 1 }}>
-            The Stanford Drone Dataset contains aerial videos captured by drones of various locations
-            on the Stanford campus, featuring pedestrians, bicyclists, skateboarders, cars, buses, and carts.
-          </Typography>
-          <Link 
-            href="https://cvgl.stanford.edu/projects/uav_data/" 
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{ mb: 2, display: 'block' }}
-          >
-            Learn more about the Stanford Drone Dataset
-          </Link>
-        </Paper>
         
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 2 }}>
           {STANFORD_DRONE_SAMPLES.map((sample) => (
@@ -163,37 +129,6 @@ const SampleSelector: React.FC<SampleSelectorProps> = ({ onSelectSample }) => {
           ))}
         </Box>
         
-        <Typography variant="subtitle1" sx={{ mt: 3, mb: 2 }}>
-          Fallback Videos (if Stanford Dataset unavailable)
-        </Typography>
-        
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 2 }}>
-          {FALLBACK_VIDEOS.map((video) => (
-            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 4' } }} key={video.id}>
-              <Card 
-                sx={{ 
-                  cursor: 'pointer',
-                  '&:hover': {
-                    boxShadow: 3
-                  }
-                }}
-                onClick={() => handleSelectSample(video.url)}
-              >
-                <CardMedia
-                  component="img"
-                  height="140"
-                  image={video.thumbnail}
-                  alt={video.name}
-                />
-                <CardContent sx={{ py: 1 }}>
-                  <Typography variant="body2" component="div">
-                    {video.name}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Box>
-          ))}
-        </Box>
       </Collapse>
     </Box>
   );

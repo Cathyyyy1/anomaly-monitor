@@ -204,22 +204,18 @@ const MainPage: React.FC = () => {
     
     // Apply object type filter
     if (objectTypeFilter) {
-      result = result.filter(alert => {
-        // Check in message
-        if (alert.message && alert.message.toLowerCase().includes(objectTypeFilter.toLowerCase())) return true;
-        
-        // Check in metadata
-        if (alert.metadata) {
-          const metadataStr = typeof alert.metadata === 'string' 
-            ? alert.metadata 
-            : JSON.stringify(alert.metadata);
-          
-          return metadataStr.toLowerCase().includes(objectTypeFilter.toLowerCase());
-        }
-        
-        return false;
-      });
+        result = result.filter(alert => {
+            const target = objectTypeFilter.toLowerCase();
+            
+            if (!alert.metadata || !Array.isArray(alert.metadata.detections)) {
+                return false;
+            }
+            
+            const detectedClasses = alert.metadata.detections.map((d: any) => d.class?.toLowerCase());
+            return detectedClasses.includes(target);
+        });
     }
+      
     
     // Apply severity filter with exact match
     if (severityFilter) {
@@ -456,7 +452,7 @@ const MainPage: React.FC = () => {
     }
     
     // Create alerts for ANY detections, regardless of anomaly score
-    if (detections.length > 0) {
+    if (detections && detections.length > 0) {
       const video = document.querySelector('video');
       
       if (!video) return;
@@ -469,6 +465,7 @@ const MainPage: React.FC = () => {
       // Create frame capture
       const captureVideoFrame = () => {
         if (!video) return null;
+        const scale = 0.25;
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -477,6 +474,11 @@ const MainPage: React.FC = () => {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         return canvas.toDataURL('image/jpeg', 0.8);
       };
+
+      const videoFileName =
+        selectedFile?.name ||
+        (videoUrl ? videoUrl.split('/').pop() : '') ||
+        'unknown';
 
       // Prepare metadata
       const metadata = {
@@ -487,10 +489,11 @@ const MainPage: React.FC = () => {
         anomalies: anomalyResult.anomalies,
         anomalyScore: anomalyResult.anomalyScore,
         videoTime: currentTime,
-        frameImage: captureVideoFrame(),
         frameNumber: actualFrameNumber,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        videoFileName
       };
+      
       
       // Get detection types
       const objectTypes = Array.from(new Set(detections.map(d => d.class)));
@@ -510,6 +513,8 @@ const MainPage: React.FC = () => {
       setTimeout(() => {
         getAlerts();
       }, 1000); // Wait a second for the alert to be saved
+    } else {
+        console.log("No detections found. Alert not created.");
     }
   };
 
@@ -800,8 +805,30 @@ const MainPage: React.FC = () => {
                               : alert.metadata?.frameNumber ?? 'N/A'
                           }
                         </TableCell>
-                        <TableCell>{alert.type}</TableCell>
-                        <TableCell>{alert.message}</TableCell>
+                        <TableCell>
+                        {(() => {
+                            if (!alert.metadata || !Array.isArray(alert.metadata.detections)) {
+                            return alert.type;
+                            }
+
+                            return alert.metadata.detections[0]?.class ?? alert.type;
+                        })()}
+                        </TableCell>
+                        <TableCell>
+                        {alert.message}
+                        {
+                            (() => {
+                            const metadata =
+                                typeof alert.metadata === 'string'
+                                ? JSON.parse(alert.metadata)
+                                : alert.metadata;
+                            
+                            console.log('Metadata for alert', alert.id, metadata);
+                            return metadata?.videoFileName
+                                ? ` - Video: ${metadata.videoFileName}`
+                                : '';
+                            })()}
+                        </TableCell>
                         <TableCell>{alert.severity}</TableCell>
                         <TableCell>{alert.status}</TableCell>
                       </TableRow>
